@@ -1,5 +1,3 @@
-import { User } from "@supabase/supabase-js";
-
 export interface PlayerPosition {
   x: number;
   y: number;
@@ -15,6 +13,7 @@ export interface Player {
   user_id: string;
   username: string;
   avatar_color: string;
+  avatar_shape: string;
   position: PlayerPosition;
   rotation: PlayerRotation;
   is_online: boolean;
@@ -36,7 +35,6 @@ export interface GameState {
 }
 
 export interface AuthState {
-  user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
