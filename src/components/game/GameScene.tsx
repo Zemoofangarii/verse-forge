@@ -13,7 +13,7 @@ import { GameUI } from "./GameUI";
 import { LoadingScreen } from "./LoadingScreen";
 
 export function GameScene() {
-  const { currentPlayer, otherPlayers, isConnected, updatePosition } = useMultiplayer();
+  const { currentPlayer, otherPlayers, isConnected, updatePosition, updateAvatar } = useMultiplayer();
   const { movement, setIsChatFocused } = useKeyboardControls();
   const cameraRef = useRef<THREE.Object3D>(new THREE.Object3D());
 
@@ -83,6 +83,7 @@ export function GameScene() {
         otherPlayers={otherPlayers}
         isConnected={isConnected}
         onChatFocus={setIsChatFocused}
+        onAvatarUpdate={updateAvatar}
       />
     </div>
   );

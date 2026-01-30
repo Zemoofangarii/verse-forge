@@ -35,6 +35,7 @@ export function useMultiplayer() {
           user_id: data.user_id,
           username: data.username,
           avatar_color: data.avatar_color,
+          avatar_shape: data.avatar_shape || "capsule",
           position: {
             x: data.position_x,
             y: data.position_y,
@@ -78,6 +79,7 @@ export function useMultiplayer() {
             user_id: p.user_id,
             username: p.username,
             avatar_color: p.avatar_color,
+            avatar_shape: p.avatar_shape || "capsule",
             position: {
               x: p.position_x,
               y: p.position_y,
@@ -112,6 +114,7 @@ export function useMultiplayer() {
             user_id: string;
             username: string;
             avatar_color: string;
+            avatar_shape: string;
             position_x: number;
             position_y: number;
             position_z: number;
@@ -127,6 +130,7 @@ export function useMultiplayer() {
             user_id: data.user_id,
             username: data.username,
             avatar_color: data.avatar_color,
+            avatar_shape: data.avatar_shape || "capsule",
             position: {
               x: data.position_x,
               y: data.position_y,
@@ -207,10 +211,24 @@ export function useMultiplayer() {
     [user]
   );
 
+  // Update avatar
+  const updateAvatar = useCallback((color: string, shape: string) => {
+    setCurrentPlayer((prev) =>
+      prev
+        ? {
+            ...prev,
+            avatar_color: color,
+            avatar_shape: shape,
+          }
+        : null
+    );
+  }, []);
+
   return {
     currentPlayer,
     otherPlayers,
     isConnected,
     updatePosition,
+    updateAvatar,
   };
 }

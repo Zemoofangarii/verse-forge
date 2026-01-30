@@ -41,6 +41,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_color: string
+          avatar_shape: string
           created_at: string
           id: string
           is_online: boolean
@@ -54,6 +55,7 @@ export type Database = {
         }
         Insert: {
           avatar_color?: string
+          avatar_shape?: string
           created_at?: string
           id?: string
           is_online?: boolean
@@ -67,6 +69,7 @@ export type Database = {
         }
         Update: {
           avatar_color?: string
+          avatar_shape?: string
           created_at?: string
           id?: string
           is_online?: boolean
