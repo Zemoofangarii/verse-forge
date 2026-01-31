@@ -13,35 +13,59 @@ export function useMultiplayer() {
   const lastUpdateRef = useRef<number>(0);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Fetch current player profile
+  // Fetch or create current player profile
   useEffect(() => {
     if (!user) return;
 
-    const fetchProfile = async () => {
-      const { data, error } = await supabase
+    const fetchOrCreateProfile = async () => {
+      // First try to fetch existing profile
+      const { data: existingProfile } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
-        return;
+      let profileData = existingProfile;
+
+      // If no profile exists, create one
+      if (!profileData) {
+        const username = user.user_metadata?.username || user.email?.split("@")[0] || "Player";
+        const { data: newProfile, error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: user.id,
+            username,
+            avatar_color: "#00ffff",
+            avatar_shape: "capsule",
+            position_x: 0,
+            position_y: 2,
+            position_z: 0,
+            rotation_y: 0,
+            is_online: true,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("Error creating profile:", insertError);
+          return;
+        }
+        profileData = newProfile;
       }
 
-      if (data) {
+      if (profileData) {
         setCurrentPlayer({
-          id: data.id,
-          user_id: data.user_id,
-          username: data.username,
-          avatar_color: data.avatar_color,
-          avatar_shape: data.avatar_shape || "capsule",
+          id: profileData.id,
+          user_id: profileData.user_id,
+          username: profileData.username,
+          avatar_color: profileData.avatar_color,
+          avatar_shape: profileData.avatar_shape || "capsule",
           position: {
-            x: data.position_x,
-            y: data.position_y,
-            z: data.position_z,
+            x: profileData.position_x,
+            y: profileData.position_y,
+            z: profileData.position_z,
           },
-          rotation: { y: data.rotation_y },
+          rotation: { y: profileData.rotation_y },
           is_online: true,
         });
 
@@ -53,7 +77,7 @@ export function useMultiplayer() {
       }
     };
 
-    fetchProfile();
+    fetchOrCreateProfile();
   }, [user]);
 
   // Fetch other players
