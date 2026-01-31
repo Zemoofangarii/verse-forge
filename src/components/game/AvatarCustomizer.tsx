@@ -1,17 +1,27 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, Palette, Shapes } from "lucide-react";
+import { X, Check, Palette, Shapes, Crown, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AvatarCustomizerProps {
   isOpen: boolean;
   onClose: () => void;
   currentColor: string;
   currentShape: string;
+  currentHat: string;
+  currentAccessory: string;
+  currentParticle: string;
   userId: string;
-  onUpdate: (color: string, shape: string) => void;
+  onUpdate: (updates: {
+    color?: string;
+    shape?: string;
+    hat?: string;
+    accessory?: string;
+    particle?: string;
+  }) => void;
 }
 
 const AVATAR_COLORS = [
@@ -37,16 +47,49 @@ const AVATAR_SHAPES = [
   { name: "Ninja", value: "ninja", description: "Sleek and stealthy" },
 ];
 
+const AVATAR_HATS = [
+  { name: "None", value: "none", icon: "✕" },
+  { name: "Crown", value: "crown", icon: "👑" },
+  { name: "Wizard", value: "wizard", icon: "🧙" },
+  { name: "Party", value: "party", icon: "🎉" },
+  { name: "Halo", value: "halo", icon: "😇" },
+  { name: "Horns", value: "horns", icon: "😈" },
+];
+
+const AVATAR_ACCESSORIES = [
+  { name: "None", value: "none", icon: "✕" },
+  { name: "Wings", value: "wings", icon: "🪽" },
+  { name: "Cape", value: "cape", icon: "🦸" },
+  { name: "Shield", value: "shield", icon: "🛡️" },
+  { name: "Aura", value: "aura", icon: "✨" },
+  { name: "Pet", value: "pet", icon: "🐾" },
+];
+
+const AVATAR_PARTICLES = [
+  { name: "None", value: "none", icon: "✕" },
+  { name: "Sparkles", value: "sparkles", icon: "✨" },
+  { name: "Fire", value: "fire", icon: "🔥" },
+  { name: "Ice", value: "ice", icon: "❄️" },
+  { name: "Hearts", value: "hearts", icon: "💕" },
+  { name: "Stars", value: "stars", icon: "⭐" },
+];
+
 export function AvatarCustomizer({
   isOpen,
   onClose,
   currentColor,
   currentShape,
+  currentHat,
+  currentAccessory,
+  currentParticle,
   userId,
   onUpdate,
 }: AvatarCustomizerProps) {
   const [selectedColor, setSelectedColor] = useState(currentColor);
   const [selectedShape, setSelectedShape] = useState(currentShape);
+  const [selectedHat, setSelectedHat] = useState(currentHat);
+  const [selectedAccessory, setSelectedAccessory] = useState(currentAccessory);
+  const [selectedParticle, setSelectedParticle] = useState(currentParticle);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -58,6 +101,9 @@ export function AvatarCustomizer({
       .update({
         avatar_color: selectedColor,
         avatar_shape: selectedShape,
+        avatar_hat: selectedHat,
+        avatar_accessory: selectedAccessory,
+        avatar_particle: selectedParticle,
       })
       .eq("user_id", userId);
 
@@ -72,7 +118,13 @@ export function AvatarCustomizer({
       return;
     }
 
-    onUpdate(selectedColor, selectedShape);
+    onUpdate({
+      color: selectedColor,
+      shape: selectedShape,
+      hat: selectedHat,
+      accessory: selectedAccessory,
+      particle: selectedParticle,
+    });
     toast({
       title: "Avatar updated!",
       description: "Your new look is ready.",
@@ -95,7 +147,7 @@ export function AvatarCustomizer({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="glass-panel rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="glass-panel rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -111,39 +163,119 @@ export function AvatarCustomizer({
             {/* Preview */}
             <div className="mb-6">
               <div className="flex justify-center p-6 rounded-xl bg-muted/50">
-                <AvatarPreview color={selectedColor} shape={selectedShape} />
+                <AvatarPreview 
+                  color={selectedColor} 
+                  shape={selectedShape}
+                  hat={selectedHat}
+                  accessory={selectedAccessory}
+                  particle={selectedParticle}
+                />
               </div>
             </div>
 
-            {/* Shape Selection */}
-            <div className="mb-6">
-              <h3 className="text-sm font-display font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                <Shapes className="w-4 h-4" />
-                SHAPE
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {AVATAR_SHAPES.map((shape) => (
-                  <button
-                    key={shape.value}
-                    onClick={() => setSelectedShape(shape.value)}
-                    className={`p-3 rounded-lg border-2 transition-all text-left ${
-                      selectedShape === shape.value
-                        ? "border-primary bg-primary/10 shadow-neon"
-                        : "border-border hover:border-primary/50 bg-muted/30"
-                    }`}
-                  >
-                    <p className="font-semibold text-foreground text-sm">
-                      {shape.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {shape.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Tabs for different customization categories */}
+            <Tabs defaultValue="shape" className="mb-6">
+              <TabsList className="grid grid-cols-4 mb-4">
+                <TabsTrigger value="shape" className="flex items-center gap-1">
+                  <Shapes className="w-4 h-4" />
+                  <span className="hidden sm:inline">Shape</span>
+                </TabsTrigger>
+                <TabsTrigger value="hat" className="flex items-center gap-1">
+                  <Crown className="w-4 h-4" />
+                  <span className="hidden sm:inline">Hat</span>
+                </TabsTrigger>
+                <TabsTrigger value="accessory" className="flex items-center gap-1">
+                  <Wand2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Accessory</span>
+                </TabsTrigger>
+                <TabsTrigger value="effects" className="flex items-center gap-1">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="hidden sm:inline">Effects</span>
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Color Selection */}
+              <TabsContent value="shape">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {AVATAR_SHAPES.map((shape) => (
+                    <button
+                      key={shape.value}
+                      onClick={() => setSelectedShape(shape.value)}
+                      className={`p-3 rounded-lg border-2 transition-all text-left ${
+                        selectedShape === shape.value
+                          ? "border-primary bg-primary/10 shadow-neon"
+                          : "border-border hover:border-primary/50 bg-muted/30"
+                      }`}
+                    >
+                      <p className="font-semibold text-foreground text-sm">
+                        {shape.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {shape.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="hat">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {AVATAR_HATS.map((hat) => (
+                    <button
+                      key={hat.value}
+                      onClick={() => setSelectedHat(hat.value)}
+                      className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
+                        selectedHat === hat.value
+                          ? "border-primary bg-primary/10 shadow-neon"
+                          : "border-border hover:border-primary/50 bg-muted/30"
+                      }`}
+                    >
+                      <span className="text-2xl mb-1">{hat.icon}</span>
+                      <span className="text-xs text-foreground">{hat.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="accessory">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {AVATAR_ACCESSORIES.map((accessory) => (
+                    <button
+                      key={accessory.value}
+                      onClick={() => setSelectedAccessory(accessory.value)}
+                      className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
+                        selectedAccessory === accessory.value
+                          ? "border-primary bg-primary/10 shadow-neon"
+                          : "border-border hover:border-primary/50 bg-muted/30"
+                      }`}
+                    >
+                      <span className="text-2xl mb-1">{accessory.icon}</span>
+                      <span className="text-xs text-foreground">{accessory.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="effects">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {AVATAR_PARTICLES.map((particle) => (
+                    <button
+                      key={particle.value}
+                      onClick={() => setSelectedParticle(particle.value)}
+                      className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center ${
+                        selectedParticle === particle.value
+                          ? "border-primary bg-primary/10 shadow-neon"
+                          : "border-border hover:border-primary/50 bg-muted/30"
+                      }`}
+                    >
+                      <span className="text-2xl mb-1">{particle.icon}</span>
+                      <span className="text-xs text-foreground">{particle.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            {/* Color Selection - Always visible */}
             <div className="mb-6">
               <h3 className="text-sm font-display font-semibold text-muted-foreground mb-3 flex items-center gap-2">
                 <Palette className="w-4 h-4" />
@@ -199,7 +331,19 @@ export function AvatarCustomizer({
 }
 
 // 2D Preview component
-function AvatarPreview({ color, shape }: { color: string; shape: string }) {
+function AvatarPreview({ 
+  color, 
+  shape,
+  hat,
+  accessory,
+  particle 
+}: { 
+  color: string; 
+  shape: string;
+  hat: string;
+  accessory: string;
+  particle: string;
+}) {
   const renderShape = () => {
     switch (shape) {
       case "cube":
@@ -311,10 +455,52 @@ function AvatarPreview({ color, shape }: { color: string; shape: string }) {
     }
   };
 
+  const renderHatIcon = () => {
+    const hatItem = AVATAR_HATS.find(h => h.value === hat);
+    if (!hatItem || hat === "none") return null;
+    return (
+      <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-2xl">
+        {hatItem.icon}
+      </span>
+    );
+  };
+
+  const renderAccessoryIcon = () => {
+    const accItem = AVATAR_ACCESSORIES.find(a => a.value === accessory);
+    if (!accItem || accessory === "none") return null;
+    return (
+      <span className="absolute top-1/2 -right-6 text-xl">
+        {accItem.icon}
+      </span>
+    );
+  };
+
+  const renderParticleIcon = () => {
+    const partItem = AVATAR_PARTICLES.find(p => p.value === particle);
+    if (!partItem || particle === "none") return null;
+    return (
+      <>
+        <span className="absolute -top-2 -left-4 text-sm animate-pulse">{partItem.icon}</span>
+        <span className="absolute top-1/3 -right-4 text-sm animate-pulse delay-100">{partItem.icon}</span>
+        <span className="absolute bottom-0 -left-2 text-sm animate-pulse delay-200">{partItem.icon}</span>
+      </>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center">
-      {renderShape()}
-      <p className="mt-4 text-sm text-muted-foreground capitalize">{shape}</p>
+      <div className="relative">
+        {renderShape()}
+        {renderHatIcon()}
+        {renderAccessoryIcon()}
+        {renderParticleIcon()}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2 justify-center">
+        <span className="text-xs text-muted-foreground capitalize px-2 py-1 bg-muted rounded">{shape}</span>
+        {hat !== "none" && <span className="text-xs text-muted-foreground capitalize px-2 py-1 bg-muted rounded">{hat}</span>}
+        {accessory !== "none" && <span className="text-xs text-muted-foreground capitalize px-2 py-1 bg-muted rounded">{accessory}</span>}
+        {particle !== "none" && <span className="text-xs text-muted-foreground capitalize px-2 py-1 bg-muted rounded">{particle}</span>}
+      </div>
     </div>
   );
 }

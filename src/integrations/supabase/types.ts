@@ -40,7 +40,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_accessory: string
           avatar_color: string
+          avatar_hat: string
+          avatar_particle: string
           avatar_shape: string
           created_at: string
           id: string
@@ -54,7 +57,10 @@ export type Database = {
           username: string
         }
         Insert: {
+          avatar_accessory?: string
           avatar_color?: string
+          avatar_hat?: string
+          avatar_particle?: string
           avatar_shape?: string
           created_at?: string
           id?: string
@@ -68,7 +74,10 @@ export type Database = {
           username: string
         }
         Update: {
+          avatar_accessory?: string
           avatar_color?: string
+          avatar_hat?: string
+          avatar_particle?: string
           avatar_shape?: string
           created_at?: string
           id?: string

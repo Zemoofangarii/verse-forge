@@ -13,7 +13,13 @@ interface GameUIProps {
   otherPlayers: Player[];
   isConnected: boolean;
   onChatFocus: (focused: boolean) => void;
-  onAvatarUpdate: (color: string, shape: string) => void;
+  onAvatarUpdate: (updates: {
+    color?: string;
+    shape?: string;
+    hat?: string;
+    accessory?: string;
+    particle?: string;
+  }) => void;
 }
 
 export function GameUI({
@@ -259,6 +265,9 @@ export function GameUI({
         onClose={() => setIsCustomizerOpen(false)}
         currentColor={currentPlayer.avatar_color}
         currentShape={currentPlayer.avatar_shape}
+        currentHat={currentPlayer.avatar_hat}
+        currentAccessory={currentPlayer.avatar_accessory}
+        currentParticle={currentPlayer.avatar_particle}
         userId={currentPlayer.user_id}
         onUpdate={onAvatarUpdate}
       />

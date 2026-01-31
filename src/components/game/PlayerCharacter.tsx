@@ -4,6 +4,9 @@ import { RigidBody, CuboidCollider } from "@react-three/rapier";
 import * as THREE from "three";
 import { Player, MovementInput, PlayerPosition } from "@/types/game";
 import { Text } from "@react-three/drei";
+import { AvatarHat } from "./avatar/AvatarHats";
+import { AvatarAccessory } from "./avatar/AvatarAccessories";
+import { AvatarParticle } from "./avatar/AvatarParticles";
 
 const MOVE_SPEED = 5;
 const JUMP_FORCE = 5;
@@ -248,20 +251,43 @@ function NinjaShape({ color }: { color: string }) {
   );
 }
 
-function AvatarMesh({ color, shape }: { color: string; shape: string }) {
-  switch (shape) {
-    case "cube":
-      return <CubeShape color={color} />;
-    case "sphere":
-      return <SphereShape color={color} />;
-    case "robot":
-      return <RobotShape color={color} />;
-    case "ninja":
-      return <NinjaShape color={color} />;
-    case "capsule":
-    default:
-      return <CapsuleShape color={color} />;
-  }
+function AvatarMesh({ 
+  color, 
+  shape,
+  hat,
+  accessory,
+  particle 
+}: { 
+  color: string; 
+  shape: string;
+  hat?: string;
+  accessory?: string;
+  particle?: string;
+}) {
+  const renderShape = () => {
+    switch (shape) {
+      case "cube":
+        return <CubeShape color={color} />;
+      case "sphere":
+        return <SphereShape color={color} />;
+      case "robot":
+        return <RobotShape color={color} />;
+      case "ninja":
+        return <NinjaShape color={color} />;
+      case "capsule":
+      default:
+        return <CapsuleShape color={color} />;
+    }
+  };
+
+  return (
+    <>
+      {renderShape()}
+      {hat && hat !== "none" && <AvatarHat hat={hat} color={color} />}
+      {accessory && accessory !== "none" && <AvatarAccessory accessory={accessory} color={color} />}
+      {particle && particle !== "none" && <AvatarParticle particle={particle} color={color} />}
+    </>
+  );
 }
 
 export function PlayerCharacter({
@@ -367,6 +393,9 @@ export function PlayerCharacter({
 
   const characterColor = player.avatar_color || "#00ffff";
   const characterShape = player.avatar_shape || "capsule";
+  const characterHat = player.avatar_hat || "none";
+  const characterAccessory = player.avatar_accessory || "none";
+  const characterParticle = player.avatar_particle || "none";
 
   if (isCurrentPlayer) {
     return (
@@ -380,7 +409,13 @@ export function PlayerCharacter({
       >
         <CuboidCollider args={[0.3, 0.5, 0.3]} position={[0, 0.5, 0]} />
         <group ref={meshRef}>
-          <AvatarMesh color={characterColor} shape={characterShape} />
+          <AvatarMesh 
+            color={characterColor} 
+            shape={characterShape}
+            hat={characterHat}
+            accessory={characterAccessory}
+            particle={characterParticle}
+          />
         </group>
       </RigidBody>
     );
@@ -404,7 +439,13 @@ export function PlayerCharacter({
       >
         {player.username}
       </Text>
-      <AvatarMesh color={characterColor} shape={characterShape} />
+      <AvatarMesh 
+        color={characterColor} 
+        shape={characterShape}
+        hat={characterHat}
+        accessory={characterAccessory}
+        particle={characterParticle}
+      />
     </group>
   );
 }
