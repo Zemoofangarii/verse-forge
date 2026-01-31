@@ -60,6 +60,9 @@ export function useMultiplayer() {
           username: profileData.username,
           avatar_color: profileData.avatar_color,
           avatar_shape: profileData.avatar_shape || "capsule",
+          avatar_hat: profileData.avatar_hat || "none",
+          avatar_accessory: profileData.avatar_accessory || "none",
+          avatar_particle: profileData.avatar_particle || "none",
           position: {
             x: profileData.position_x,
             y: profileData.position_y,
@@ -104,6 +107,9 @@ export function useMultiplayer() {
             username: p.username,
             avatar_color: p.avatar_color,
             avatar_shape: p.avatar_shape || "capsule",
+            avatar_hat: p.avatar_hat || "none",
+            avatar_accessory: p.avatar_accessory || "none",
+            avatar_particle: p.avatar_particle || "none",
             position: {
               x: p.position_x,
               y: p.position_y,
@@ -139,6 +145,9 @@ export function useMultiplayer() {
             username: string;
             avatar_color: string;
             avatar_shape: string;
+            avatar_hat: string;
+            avatar_accessory: string;
+            avatar_particle: string;
             position_x: number;
             position_y: number;
             position_z: number;
@@ -155,6 +164,9 @@ export function useMultiplayer() {
             username: data.username,
             avatar_color: data.avatar_color,
             avatar_shape: data.avatar_shape || "capsule",
+            avatar_hat: data.avatar_hat || "none",
+            avatar_accessory: data.avatar_accessory || "none",
+            avatar_particle: data.avatar_particle || "none",
             position: {
               x: data.position_x,
               y: data.position_y,
@@ -236,13 +248,22 @@ export function useMultiplayer() {
   );
 
   // Update avatar
-  const updateAvatar = useCallback((color: string, shape: string) => {
+  const updateAvatar = useCallback((updates: {
+    color?: string;
+    shape?: string;
+    hat?: string;
+    accessory?: string;
+    particle?: string;
+  }) => {
     setCurrentPlayer((prev) =>
       prev
         ? {
             ...prev,
-            avatar_color: color,
-            avatar_shape: shape,
+            ...(updates.color && { avatar_color: updates.color }),
+            ...(updates.shape && { avatar_shape: updates.shape }),
+            ...(updates.hat !== undefined && { avatar_hat: updates.hat }),
+            ...(updates.accessory !== undefined && { avatar_accessory: updates.accessory }),
+            ...(updates.particle !== undefined && { avatar_particle: updates.particle }),
           }
         : null
     );

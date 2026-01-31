@@ -14,6 +14,9 @@ export interface Player {
   username: string;
   avatar_color: string;
   avatar_shape: string;
+  avatar_hat: string;
+  avatar_accessory: string;
+  avatar_particle: string;
   position: PlayerPosition;
   rotation: PlayerRotation;
   is_online: boolean;
