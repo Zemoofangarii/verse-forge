@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Users, MessageCircle, Wifi, WifiOff, LogOut, Settings } from "lucide-react";
+import { Send, Users, MessageCircle, Wifi, WifiOff, LogOut, Settings, Store, Coins } from "lucide-react";
 import { Player } from "@/types/game";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
+import { useMarketplace } from "@/hooks/useMarketplace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AvatarCustomizer } from "./AvatarCustomizer";
+import { MarketplacePanel } from "./marketplace";
 
 interface GameUIProps {
   currentPlayer: Player;
@@ -32,10 +34,21 @@ export function GameUI({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPlayersOpen, setIsPlayersOpen] = useState(false);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const { messages, sendMessage } = useChat();
   const { signOut } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Marketplace integration
+  const {
+    properties,
+    myProperties,
+    coins,
+    isLoading: isMarketplaceLoading,
+    buyProperty,
+    sellProperty,
+  } = useMarketplace(currentPlayer.id);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -63,7 +76,7 @@ export function GameUI({
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="glass-panel rounded-xl p-4 flex items-center gap-3"
+            className="glass-panel rounded-xl p-4 flex items-center gap-4"
           >
             <button
               onClick={() => setIsCustomizerOpen(true)}
@@ -95,10 +108,33 @@ export function GameUI({
                 )}
               </div>
             </div>
+            
+            {/* Coin display */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
+              <Coins className="w-4 h-4 text-yellow-400" />
+              <span className="font-display font-bold text-yellow-400">
+                {coins.toLocaleString()}
+              </span>
+            </div>
           </motion.div>
 
           {/* Right side controls */}
           <div className="flex items-center gap-2">
+            {/* Marketplace button */}
+            <Button
+              variant="glass"
+              size="icon"
+              onClick={() => setIsMarketplaceOpen(true)}
+              title="Property Marketplace"
+              className="relative"
+            >
+              <Store className="w-5 h-5" />
+              {myProperties.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent rounded-full text-xs flex items-center justify-center text-accent-foreground font-bold">
+                  {myProperties.length}
+                </span>
+              )}
+            </Button>
             <Button
               variant="glass"
               size="icon"
@@ -270,6 +306,18 @@ export function GameUI({
         currentParticle={currentPlayer.avatar_particle}
         userId={currentPlayer.user_id}
         onUpdate={onAvatarUpdate}
+      />
+
+      {/* Marketplace Panel */}
+      <MarketplacePanel
+        isOpen={isMarketplaceOpen}
+        onClose={() => setIsMarketplaceOpen(false)}
+        properties={properties}
+        myProperties={myProperties}
+        coins={coins}
+        isLoading={isMarketplaceLoading}
+        onBuyProperty={buyProperty}
+        onSellProperty={sellProperty}
       />
     </>
   );

@@ -38,6 +38,48 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_listings: {
+        Row: {
+          asking_price: number
+          id: string
+          is_active: boolean
+          listed_at: string
+          property_id: string
+          seller_id: string
+        }
+        Insert: {
+          asking_price: number
+          id?: string
+          is_active?: boolean
+          listed_at?: string
+          property_id: string
+          seller_id: string
+        }
+        Update: {
+          asking_price?: number
+          id?: string
+          is_active?: boolean
+          listed_at?: string
+          property_id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_listings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_accessory: string
@@ -45,6 +87,7 @@ export type Database = {
           avatar_hat: string
           avatar_particle: string
           avatar_shape: string
+          coins: number
           created_at: string
           id: string
           is_online: boolean
@@ -62,6 +105,7 @@ export type Database = {
           avatar_hat?: string
           avatar_particle?: string
           avatar_shape?: string
+          coins?: number
           created_at?: string
           id?: string
           is_online?: boolean
@@ -79,6 +123,7 @@ export type Database = {
           avatar_hat?: string
           avatar_particle?: string
           avatar_shape?: string
+          coins?: number
           created_at?: string
           id?: string
           is_online?: boolean
@@ -91,6 +136,148 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      properties: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_for_sale: boolean
+          name: string
+          owner_id: string | null
+          position_x: number
+          position_y: number
+          position_z: number
+          price: number
+          property_type_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_for_sale?: boolean
+          name: string
+          owner_id?: string | null
+          position_x?: number
+          position_y?: number
+          position_z?: number
+          price: number
+          property_type_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_for_sale?: boolean
+          name?: string
+          owner_id?: string | null
+          position_x?: number
+          position_y?: number
+          position_z?: number
+          price?: number
+          property_type_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_property_type_id_fkey"
+            columns: ["property_type_id"]
+            isOneToOne: false
+            referencedRelation: "property_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_types: {
+        Row: {
+          base_price: number
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          model_type: string
+          name: string
+        }
+        Insert: {
+          base_price: number
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          model_type?: string
+          name: string
+        }
+        Update: {
+          base_price?: number
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          model_type?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          buyer_id: string | null
+          created_at: string
+          id: string
+          property_id: string | null
+          seller_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          seller_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          property_id?: string | null
+          seller_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
