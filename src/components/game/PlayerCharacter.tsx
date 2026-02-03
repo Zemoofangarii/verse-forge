@@ -10,6 +10,8 @@ import { AvatarParticle } from "./avatar/AvatarParticles";
 
 const MOVE_SPEED = 5;
 const JUMP_FORCE = 5;
+const FALL_THRESHOLD = -20;
+const SPAWN_POSITION = { x: 0, y: 3, z: 0 };
 
 interface PlayerCharacterProps {
   player: Player;
@@ -308,6 +310,13 @@ export function PlayerCharacter({
     const rb = rigidBodyRef.current;
     const currentVel = rb.linvel();
     const position = rb.translation();
+
+    // Respawn if fallen below threshold
+    if (position.y < FALL_THRESHOLD) {
+      rb.setTranslation(SPAWN_POSITION, true);
+      rb.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      return;
+    }
 
     // Calculate movement direction based on camera
     let moveX = 0;
