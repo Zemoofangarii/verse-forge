@@ -1,5 +1,6 @@
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
 import { WorldObject } from "@/types/game";
+import { PropertyBuildings } from "./world/PropertyBuildings";
 
 // Default world layout
 const DEFAULT_WORLD_OBJECTS: WorldObject[] = [
@@ -88,6 +89,9 @@ export function GameWorld() {
       {DEFAULT_WORLD_OBJECTS.map((obj) => (
         <WorldObjectMesh key={obj.id} object={obj} />
       ))}
+
+      {/* Owned property buildings */}
+      <PropertyBuildings />
 
       {/* Ambient lighting */}
       <ambientLight intensity={0.3} />
