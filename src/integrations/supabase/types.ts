@@ -80,6 +80,44 @@ export type Database = {
           },
         ]
       }
+      player_inventory: {
+        Row: {
+          created_at: string
+          equipped: boolean
+          id: string
+          item_data: Json | null
+          item_name: string
+          item_type: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipped?: boolean
+          id?: string
+          item_data?: Json | null
+          item_name: string
+          item_type: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          equipped?: boolean
+          id?: string
+          item_data?: Json | null
+          item_name?: string
+          item_type?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_inventory_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_accessory: string
@@ -92,12 +130,14 @@ export type Database = {
           id: string
           is_online: boolean
           last_seen: string | null
+          level: number
           position_x: number
           position_y: number
           position_z: number
           rotation_y: number
           user_id: string
           username: string
+          xp: number
         }
         Insert: {
           avatar_accessory?: string
@@ -110,12 +150,14 @@ export type Database = {
           id?: string
           is_online?: boolean
           last_seen?: string | null
+          level?: number
           position_x?: number
           position_y?: number
           position_z?: number
           rotation_y?: number
           user_id: string
           username: string
+          xp?: number
         }
         Update: {
           avatar_accessory?: string
@@ -128,12 +170,14 @@ export type Database = {
           id?: string
           is_online?: boolean
           last_seen?: string | null
+          level?: number
           position_x?: number
           position_y?: number
           position_z?: number
           rotation_y?: number
           user_id?: string
           username?: string
+          xp?: number
         }
         Relationships: []
       }

@@ -1,5 +1,5 @@
-import { useRef, Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useRef, Suspense, useEffect, useCallback } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { Stars, Preload } from "@react-three/drei";
 import * as THREE from "three";
@@ -7,15 +7,92 @@ import * as THREE from "three";
 import { GameWorld } from "./GameWorld";
 import { PlayerCharacter } from "./PlayerCharacter";
 import { ThirdPersonCamera } from "./ThirdPersonCamera";
+import { EnemyCharacter, Projectile, CombatHUD } from "./combat";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useKeyboardControls } from "@/hooks/useKeyboardControls";
+import { useCombat } from "@/hooks/useCombat";
 import { GameUI } from "./GameUI";
 import { LoadingScreen } from "./LoadingScreen";
+
+// Combat update component that runs inside Canvas
+function CombatManager({ 
+  combat 
+}: { 
+  combat: ReturnType<typeof useCombat> 
+}) {
+  const lastUpdateRef = useRef(0);
+  
+  useFrame((_, delta) => {
+    // Spawn enemies periodically
+    combat.spawnEnemy();
+    
+    // Update enemy AI
+    combat.updateEnemies(delta);
+    
+    // Process enemy attacks
+    combat.processEnemyAttacks(delta);
+    
+    // Update projectiles
+    combat.updateProjectiles(delta);
+    
+    // Process dead enemies (with throttle)
+    const now = Date.now();
+    if (now - lastUpdateRef.current > 500) {
+      lastUpdateRef.current = now;
+      combat.processDeadEnemies();
+    }
+  });
+  
+  return null;
+}
 
 export function GameScene() {
   const { currentPlayer, otherPlayers, isConnected, updatePosition, updateAvatar } = useMultiplayer();
   const { movement, setIsChatFocused } = useKeyboardControls();
   const cameraRef = useRef<THREE.Object3D>(new THREE.Object3D());
+  
+  // Combat system
+  const combat = useCombat({
+    currentPlayer,
+    profileId: currentPlayer?.id || null,
+  });
+  
+  // Handle keyboard weapon switching
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const weaponKeys: Record<string, string> = {
+        '1': 'fists',
+        '2': 'katana',
+        '3': 'nunchucks',
+        '4': 'shuriken',
+        '5': 'pistol',
+        '6': 'rifle',
+      };
+      
+      if (weaponKeys[e.key]) {
+        combat.equipWeapon(weaponKeys[e.key]);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [combat.equipWeapon]);
+  
+  // Handle mouse click for attack
+  const handleCanvasClick = useCallback(() => {
+    combat.attack();
+  }, [combat.attack]);
+  
+  // Handle respawn
+  useEffect(() => {
+    if (combat.combatState.health <= 0) {
+      // Respawn after 2 seconds
+      const timeout = setTimeout(() => {
+        combat.respawn();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [combat.combatState.health, combat.respawn]);
 
   if (!currentPlayer) {
     return <LoadingScreen message="Loading your character..." />;
@@ -36,6 +113,7 @@ export function GameScene() {
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1,
         }}
+        onClick={handleCanvasClick}
       >
         <Suspense fallback={null}>
           <color attach="background" args={["#0a0a15"]} />
@@ -69,6 +147,19 @@ export function GameScene() {
               <PlayerCharacter key={player.user_id} player={player} />
             ))}
           </Physics>
+          
+          {/* Enemies */}
+          {combat.combatState.enemies.map((enemy) => (
+            <EnemyCharacter key={enemy.id} enemy={enemy} />
+          ))}
+          
+          {/* Projectiles */}
+          {combat.projectiles.map((proj) => (
+            <Projectile key={proj.id} projectile={proj} />
+          ))}
+          
+          {/* Combat manager for updates */}
+          <CombatManager combat={combat} />
 
           {/* Third person camera */}
           <ThirdPersonCamera target={currentPlayer} cameraRef={cameraRef} />
@@ -76,6 +167,14 @@ export function GameScene() {
           <Preload all />
         </Suspense>
       </Canvas>
+
+      {/* Combat HUD overlay */}
+      <CombatHUD
+        combatState={combat.combatState}
+        notifications={combat.notifications}
+        onEquipWeapon={combat.equipWeapon}
+        onAttack={combat.attack}
+      />
 
       {/* Game UI overlay */}
       <GameUI
