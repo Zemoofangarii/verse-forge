@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { MovementInput } from "@/types/game";
 
+interface AttackInputs {
+  punch: boolean;
+  kick: boolean;
+  weaponAttack: boolean;
+}
+
 export function useKeyboardControls() {
   const [movement, setMovement] = useState<MovementInput>({
     forward: false,
@@ -8,6 +14,11 @@ export function useKeyboardControls() {
     left: false,
     right: false,
     jump: false,
+  });
+  const [attackInputs, setAttackInputs] = useState<AttackInputs>({
+    punch: false,
+    kick: false,
+    weaponAttack: false,
   });
   const [isChatFocused, setIsChatFocused] = useState(false);
 
@@ -35,6 +46,15 @@ export function useKeyboardControls() {
         case "Space":
           e.preventDefault();
           setMovement((prev) => ({ ...prev, jump: true }));
+          setAttackInputs((prev) => ({ ...prev, weaponAttack: true }));
+          break;
+        case "KeyQ":
+          e.preventDefault();
+          setAttackInputs((prev) => ({ ...prev, punch: true }));
+          break;
+        case "KeyE":
+          e.preventDefault();
+          setAttackInputs((prev) => ({ ...prev, kick: true }));
           break;
       }
     },
@@ -61,6 +81,13 @@ export function useKeyboardControls() {
         break;
       case "Space":
         setMovement((prev) => ({ ...prev, jump: false }));
+        setAttackInputs((prev) => ({ ...prev, weaponAttack: false }));
+        break;
+      case "KeyQ":
+        setAttackInputs((prev) => ({ ...prev, punch: false }));
+        break;
+      case "KeyE":
+        setAttackInputs((prev) => ({ ...prev, kick: false }));
         break;
     }
   }, []);
@@ -75,5 +102,5 @@ export function useKeyboardControls() {
     };
   }, [handleKeyDown, handleKeyUp]);
 
-  return { movement, setIsChatFocused };
+  return { movement, attackInputs, setIsChatFocused, setAttackInputs };
 }

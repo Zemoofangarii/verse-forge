@@ -58,6 +58,45 @@ export interface Projectile {
   ownerId: string;
 }
 
+// Attack types
+export type AttackType = 'punch' | 'kick' | 'weapon';
+
+export interface AttackInfo {
+  type: AttackType;
+  name: string;
+  damage: number;
+  range: number;
+  cooldown: number; // milliseconds
+  key: string;
+}
+
+export const ATTACK_TYPES: Record<AttackType, AttackInfo> = {
+  punch: {
+    type: 'punch',
+    name: 'Punch',
+    damage: 8,
+    range: 1.5,
+    cooldown: 400,
+    key: 'Q',
+  },
+  kick: {
+    type: 'kick',
+    name: 'Kick',
+    damage: 12,
+    range: 1.8,
+    cooldown: 600,
+    key: 'E',
+  },
+  weapon: {
+    type: 'weapon',
+    name: 'Weapon Attack',
+    damage: 0, // Uses weapon damage
+    range: 0, // Uses weapon range
+    cooldown: 0, // Uses weapon cooldown
+    key: 'LMB / Space',
+  },
+};
+
 // Default weapons
 export const WEAPONS: Record<string, Weapon> = {
   fists: {

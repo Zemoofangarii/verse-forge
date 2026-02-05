@@ -5,6 +5,8 @@ import {
   Enemy, 
   Weapon, 
   Projectile,
+  AttackType,
+  ATTACK_TYPES,
   WEAPONS, 
   ENEMY_TYPES,
   EnemyType,
@@ -44,6 +46,9 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
   
   const lastSpawnRef = useRef<number>(0);
   const lastAttackRef = useRef<number>(0);
+  const lastPunchRef = useRef<number>(0);
+  const lastKickRef = useRef<number>(0);
+  const [currentAttackType, setCurrentAttackType] = useState<AttackType | null>(null);
 
   // Fetch player combat stats from DB
   useEffect(() => {
@@ -189,23 +194,101 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
     });
   }, []);
 
-  // Attack function
+  // Generic melee attack function
+  const performMeleeAttack = useCallback((damage: number, range: number) => {
+    if (!currentPlayer) return;
+    
+    setCombatState(prev => {
+      const updatedEnemies = prev.enemies.map(enemy => {
+        if (enemy.state === 'dead') return enemy;
+        
+        const dx = enemy.position.x - currentPlayer.position.x;
+        const dz = enemy.position.z - currentPlayer.position.z;
+        const distance = Math.sqrt(dx * dx + dz * dz);
+        
+        // Check if enemy is in front of player and in range
+        const angleToEnemy = Math.atan2(dx, dz);
+        const playerAngle = currentPlayer.rotation.y;
+        let angleDiff = Math.abs(angleToEnemy - playerAngle);
+        if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+        
+        if (distance <= range && angleDiff < Math.PI / 2) {
+          const newHealth = enemy.health - damage;
+          
+          if (newHealth <= 0) {
+            return { ...enemy, health: 0, state: 'dead' as const };
+          }
+          
+          return { ...enemy, health: newHealth };
+        }
+        
+        return enemy;
+      });
+      
+      return { ...prev, enemies: updatedEnemies };
+    });
+  }, [currentPlayer]);
+
+  // Punch attack (Q key)
+  const punch = useCallback(() => {
+    const now = Date.now();
+    const punchInfo = ATTACK_TYPES.punch;
+    
+    if (now - lastPunchRef.current < punchInfo.cooldown) return;
+    lastPunchRef.current = now;
+    
+    if (!currentPlayer) return;
+    
+    setCurrentAttackType('punch');
+    setCombatState(prev => ({ ...prev, isAttacking: true }));
+    
+    setTimeout(() => {
+      setCombatState(prev => ({ ...prev, isAttacking: false }));
+      setCurrentAttackType(null);
+    }, 250);
+    
+    performMeleeAttack(punchInfo.damage, punchInfo.range);
+  }, [currentPlayer, performMeleeAttack]);
+
+  // Kick attack (E key)
+  const kick = useCallback(() => {
+    const now = Date.now();
+    const kickInfo = ATTACK_TYPES.kick;
+    
+    if (now - lastKickRef.current < kickInfo.cooldown) return;
+    lastKickRef.current = now;
+    
+    if (!currentPlayer) return;
+    
+    setCurrentAttackType('kick');
+    setCombatState(prev => ({ ...prev, isAttacking: true }));
+    
+    setTimeout(() => {
+      setCombatState(prev => ({ ...prev, isAttacking: false }));
+      setCurrentAttackType(null);
+    }, 300);
+    
+    performMeleeAttack(kickInfo.damage, kickInfo.range);
+  }, [currentPlayer, performMeleeAttack]);
+
+  // Weapon attack (LMB or Space)
   const attack = useCallback(() => {
     const now = Date.now();
-    const cooldown = 1000 / combatState.equippedWeapon.attackSpeed;
+    const weapon = combatState.equippedWeapon;
+    const cooldown = 1000 / weapon.attackSpeed;
     
     if (now - lastAttackRef.current < cooldown) return;
     lastAttackRef.current = now;
     
     if (!currentPlayer) return;
     
+    setCurrentAttackType('weapon');
     setCombatState(prev => ({ ...prev, isAttacking: true }));
     
     setTimeout(() => {
       setCombatState(prev => ({ ...prev, isAttacking: false }));
+      setCurrentAttackType(null);
     }, 200);
-    
-    const weapon = combatState.equippedWeapon;
     
     if (weapon.type === 'ranged') {
       // Create projectile
@@ -224,35 +307,10 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
       
       setProjectiles(prev => [...prev, projectile]);
     } else {
-      // Melee attack - check enemies in range
-      setCombatState(prev => {
-        const updatedEnemies = prev.enemies.map(enemy => {
-          const dx = enemy.position.x - currentPlayer.position.x;
-          const dz = enemy.position.z - currentPlayer.position.z;
-          const distance = Math.sqrt(dx * dx + dz * dz);
-          
-          // Check if enemy is in front of player and in range
-          const angleToEnemy = Math.atan2(dx, dz);
-          const playerAngle = currentPlayer.rotation.y;
-          const angleDiff = Math.abs(angleToEnemy - playerAngle);
-          
-          if (distance <= weapon.range && angleDiff < Math.PI / 2) {
-            const newHealth = enemy.health - weapon.damage;
-            
-            if (newHealth <= 0) {
-              return { ...enemy, health: 0, state: 'dead' as const };
-            }
-            
-            return { ...enemy, health: newHealth };
-          }
-          
-          return enemy;
-        });
-        
-        return { ...prev, enemies: updatedEnemies };
-      });
+      // Melee weapon attack
+      performMeleeAttack(weapon.damage, weapon.range);
     }
-  }, [combatState.equippedWeapon, currentPlayer]);
+  }, [combatState.equippedWeapon, currentPlayer, performMeleeAttack]);
 
   // Update projectiles
   const updateProjectiles = useCallback((delta: number) => {
@@ -427,9 +485,12 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
     projectiles,
     inventory,
     notifications,
+    currentAttackType,
     spawnEnemy,
     updateEnemies,
     processEnemyAttacks,
+    punch,
+    kick,
     attack,
     updateProjectiles,
     processDeadEnemies,

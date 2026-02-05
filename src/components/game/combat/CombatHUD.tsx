@@ -1,21 +1,27 @@
 import { motion } from 'framer-motion';
-import { Heart, Zap, Crosshair, Sword, Target } from 'lucide-react';
-import { CombatState, WEAPONS } from '@/types/combat';
+import { Heart, Zap, Crosshair, Sword, Target, Hand, Footprints } from 'lucide-react';
+import { CombatState, WEAPONS, AttackType, ATTACK_TYPES } from '@/types/combat';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface CombatHUDProps {
   combatState: CombatState;
   notifications: string[];
+  currentAttackType: AttackType | null;
   onEquipWeapon: (weaponId: string) => void;
   onAttack: () => void;
+  onPunch: () => void;
+  onKick: () => void;
 }
 
 export function CombatHUD({ 
   combatState, 
   notifications, 
+  currentAttackType,
   onEquipWeapon,
-  onAttack 
+  onAttack,
+  onPunch,
+  onKick
 }: CombatHUDProps) {
   const healthPercent = (combatState.health / combatState.maxHealth) * 100;
   const xpPercent = (combatState.xp / combatState.xpToNextLevel) * 100;
@@ -109,14 +115,55 @@ export function CombatHUD({
       </div>
       
       {/* Attack button - bottom right (for mobile) */}
-      <Button
-        variant="gaming"
-        size="lg"
-        onClick={onAttack}
-        className="absolute bottom-20 right-4 w-16 h-16 rounded-full pointer-events-auto"
-      >
-        <Crosshair className="w-8 h-8" />
-      </Button>
+      <div className="absolute bottom-16 right-4 flex flex-col gap-2 pointer-events-auto">
+        {/* Punch button */}
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={onPunch}
+          className={cn(
+            "w-14 h-14 rounded-xl glass-panel transition-all",
+            currentAttackType === 'punch' && "ring-2 ring-orange-500 bg-orange-500/20"
+          )}
+          title="Punch (Q)"
+        >
+          <Hand className="w-6 h-6" />
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded text-xs flex items-center justify-center text-white font-bold">Q</span>
+        </Button>
+        
+        {/* Kick button */}
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={onKick}
+          className={cn(
+            "w-14 h-14 rounded-xl glass-panel transition-all",
+            currentAttackType === 'kick' && "ring-2 ring-blue-500 bg-blue-500/20"
+          )}
+          title="Kick (E)"
+        >
+          <Footprints className="w-6 h-6" />
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded text-xs flex items-center justify-center text-white font-bold">E</span>
+        </Button>
+        
+        {/* Weapon attack button */}
+        <Button
+          variant="gaming"
+          size="lg"
+          onClick={onAttack}
+          className={cn(
+            "w-14 h-14 rounded-xl transition-all",
+            currentAttackType === 'weapon' && "ring-2 ring-primary scale-95"
+          )}
+          title="Weapon Attack (Space/LMB)"
+        >
+          {combatState.equippedWeapon.type === 'ranged' ? (
+            <Target className="w-6 h-6" />
+          ) : (
+            <Sword className="w-6 h-6" />
+          )}
+        </Button>
+      </div>
       
       {/* Crosshair - center */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
@@ -152,8 +199,11 @@ export function CombatHUD({
       
       {/* Controls hint */}
       <div className="absolute top-20 left-4 glass-panel rounded-xl p-3 pointer-events-auto text-xs text-muted-foreground">
-        <p><span className="text-primary font-semibold">LMB / Click</span> Attack</p>
-        <p><span className="text-primary font-semibold">1-6</span> Switch Weapon</p>
+        <p className="font-semibold text-foreground mb-1">Combat Controls:</p>
+        <p><span className="text-orange-400 font-semibold">Q</span> Punch ({ATTACK_TYPES.punch.damage} DMG)</p>
+        <p><span className="text-blue-400 font-semibold">E</span> Kick ({ATTACK_TYPES.kick.damage} DMG)</p>
+        <p><span className="text-primary font-semibold">Space / LMB</span> Weapon Attack</p>
+        <p><span className="text-yellow-400 font-semibold">1-6</span> Switch Weapon</p>
       </div>
     </>
   );

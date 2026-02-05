@@ -48,7 +48,7 @@ function CombatManager({
 
 export function GameScene() {
   const { currentPlayer, otherPlayers, isConnected, updatePosition, updateAvatar } = useMultiplayer();
-  const { movement, setIsChatFocused } = useKeyboardControls();
+  const { movement, attackInputs, setIsChatFocused, setAttackInputs } = useKeyboardControls();
   const cameraRef = useRef<THREE.Object3D>(new THREE.Object3D());
   
   // Combat system
@@ -77,6 +77,22 @@ export function GameScene() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [combat.equipWeapon]);
+  
+  // Handle attack inputs
+  useEffect(() => {
+    if (attackInputs.punch) {
+      combat.punch();
+      setAttackInputs(prev => ({ ...prev, punch: false }));
+    }
+    if (attackInputs.kick) {
+      combat.kick();
+      setAttackInputs(prev => ({ ...prev, kick: false }));
+    }
+    if (attackInputs.weaponAttack) {
+      combat.attack();
+      setAttackInputs(prev => ({ ...prev, weaponAttack: false }));
+    }
+  }, [attackInputs, combat.punch, combat.kick, combat.attack, setAttackInputs]);
   
   // Handle mouse click for attack
   const handleCanvasClick = useCallback(() => {
@@ -172,8 +188,11 @@ export function GameScene() {
       <CombatHUD
         combatState={combat.combatState}
         notifications={combat.notifications}
+        currentAttackType={combat.currentAttackType}
         onEquipWeapon={combat.equipWeapon}
         onAttack={combat.attack}
+        onPunch={combat.punch}
+        onKick={combat.kick}
       />
 
       {/* Game UI overlay */}
