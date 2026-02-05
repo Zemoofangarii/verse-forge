@@ -1,4 +1,4 @@
-import { useRef } from "react";
+ import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
 import * as THREE from "three";
@@ -6,9 +6,13 @@ import { Player, MovementInput, PlayerPosition } from "@/types/game";
 import { Text } from "@react-three/drei";
 import { AvatarHat } from "./avatar/AvatarHats";
 import { AvatarAccessory } from "./avatar/AvatarAccessories";
-import { AvatarParticle } from "./avatar/AvatarParticles";
+ import { AvatarParticle } from "./avatar/AvatarParticles";
+ import { HumanAvatar } from "./avatar/HumanAvatar";
 
-const MOVE_SPEED = 5;
+ const MOVE_SPEED = 5;
+ 
+ // Human outfit types (replaces abstract shapes)
+ const OUTFIT_TYPES = ["ninja", "knight", "wizard", "warrior", "casual"];
 const JUMP_FORCE = 5;
 const FALL_THRESHOLD = -20;
 const SPAWN_POSITION = { x: 0, y: 3, z: 0 };
@@ -21,276 +25,42 @@ interface PlayerCharacterProps {
   cameraRef?: React.RefObject<THREE.Object3D>;
 }
 
-// Shape-specific mesh components
-function CapsuleShape({ color }: { color: string }) {
-  return (
-    <>
-      {/* Body */}
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.2}
-          metalness={0.3}
-          roughness={0.7}
-        />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, 1.1, 0]} castShadow>
-        <sphereGeometry args={[0.25, 16, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.2}
-          metalness={0.3}
-          roughness={0.7}
-        />
-      </mesh>
-      {/* Eyes */}
-      <mesh position={[0.1, 1.15, 0.2]}>
-        <sphereGeometry args={[0.05, 8, 8]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-      </mesh>
-      <mesh position={[-0.1, 1.15, 0.2]}>
-        <sphereGeometry args={[0.05, 8, 8]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-      </mesh>
-    </>
-  );
-}
+ // Map old shape names to outfit types for backwards compatibility
+ function getOutfitFromShape(shape: string): string {
+   switch (shape) {
+     case "ninja": return "ninja";
+     case "robot": return "knight";
+     case "sphere": return "wizard";
+     case "cube": return "warrior";
+     case "capsule": 
+     default: return "casual";
+   }
+ }
 
-function CubeShape({ color }: { color: string }) {
-  return (
-    <>
-      {/* Body */}
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <boxGeometry args={[0.6, 0.8, 0.5]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.2}
-          metalness={0.4}
-          roughness={0.5}
-        />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, 1.15, 0]} castShadow>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.2}
-          metalness={0.4}
-          roughness={0.5}
-        />
-      </mesh>
-      {/* Eyes */}
-      <mesh position={[0.12, 1.2, 0.26]}>
-        <boxGeometry args={[0.08, 0.08, 0.02]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-      </mesh>
-      <mesh position={[-0.12, 1.2, 0.26]}>
-        <boxGeometry args={[0.08, 0.08, 0.02]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-      </mesh>
-    </>
-  );
-}
-
-function SphereShape({ color }: { color: string }) {
-  return (
-    <>
-      {/* Single large sphere body */}
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <sphereGeometry args={[0.5, 24, 24]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.3}
-          metalness={0.2}
-          roughness={0.4}
-        />
-      </mesh>
-      {/* Eyes */}
-      <mesh position={[0.15, 0.65, 0.4]}>
-        <sphereGeometry args={[0.08, 8, 8]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-      </mesh>
-      <mesh position={[-0.15, 0.65, 0.4]}>
-        <sphereGeometry args={[0.08, 8, 8]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
-      </mesh>
-      {/* Pupils */}
-      <mesh position={[0.15, 0.65, 0.48]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
-        <meshStandardMaterial color="#000000" />
-      </mesh>
-      <mesh position={[-0.15, 0.65, 0.48]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
-        <meshStandardMaterial color="#000000" />
-      </mesh>
-    </>
-  );
-}
-
-function RobotShape({ color }: { color: string }) {
-  return (
-    <>
-      {/* Body - chest */}
-      <mesh position={[0, 0.45, 0]} castShadow>
-        <boxGeometry args={[0.7, 0.7, 0.4]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.2}
-          metalness={0.7}
-          roughness={0.3}
-        />
-      </mesh>
-      {/* Chest detail */}
-      <mesh position={[0, 0.5, 0.21]}>
-        <boxGeometry args={[0.3, 0.3, 0.02]} />
-        <meshStandardMaterial color="#1a1a2e" metalness={0.8} roughness={0.2} />
-      </mesh>
-      {/* Chest light */}
-      <mesh position={[0, 0.5, 0.22]}>
-        <sphereGeometry args={[0.08, 8, 8]} />
-        <meshStandardMaterial color="#00ffff" emissive="#00ffff" emissiveIntensity={1} />
-      </mesh>
-      {/* Neck */}
-      <mesh position={[0, 0.85, 0]} castShadow>
-        <cylinderGeometry args={[0.1, 0.15, 0.1, 8]} />
-        <meshStandardMaterial color="#333333" metalness={0.6} roughness={0.4} />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, 1.1, 0]} castShadow>
-        <boxGeometry args={[0.55, 0.4, 0.45]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.2}
-          metalness={0.7}
-          roughness={0.3}
-        />
-      </mesh>
-      {/* Visor */}
-      <mesh position={[0, 1.1, 0.23]}>
-        <boxGeometry args={[0.45, 0.15, 0.02]} />
-        <meshStandardMaterial color="#000000" metalness={0.9} roughness={0.1} opacity={0.8} transparent />
-      </mesh>
-      {/* Eyes behind visor */}
-      <mesh position={[0.12, 1.1, 0.22]}>
-        <boxGeometry args={[0.08, 0.06, 0.02]} />
-        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.8} />
-      </mesh>
-      <mesh position={[-0.12, 1.1, 0.22]}>
-        <boxGeometry args={[0.08, 0.06, 0.02]} />
-        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.8} />
-      </mesh>
-      {/* Antenna */}
-      <mesh position={[0, 1.4, 0]}>
-        <cylinderGeometry args={[0.02, 0.02, 0.2, 8]} />
-        <meshStandardMaterial color="#666666" metalness={0.8} roughness={0.2} />
-      </mesh>
-      <mesh position={[0, 1.52, 0]}>
-        <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={1} />
-      </mesh>
-    </>
-  );
-}
-
-function NinjaShape({ color }: { color: string }) {
-  return (
-    <>
-      {/* Body - slim */}
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <capsuleGeometry args={[0.25, 0.5, 8, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.15}
-          metalness={0.2}
-          roughness={0.8}
-        />
-      </mesh>
-      {/* Head */}
-      <mesh position={[0, 1.05, 0]} castShadow>
-        <sphereGeometry args={[0.22, 16, 16]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.15}
-          metalness={0.2}
-          roughness={0.8}
-        />
-      </mesh>
-      {/* Mask band */}
-      <mesh position={[0, 1.05, 0]}>
-        <torusGeometry args={[0.23, 0.04, 8, 16]} />
-        <meshStandardMaterial color="#1a1a1a" metalness={0.3} roughness={0.7} />
-      </mesh>
-      {/* Eyes */}
-      <mesh position={[0.08, 1.08, 0.18]}>
-        <boxGeometry args={[0.06, 0.03, 0.02]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.8} />
-      </mesh>
-      <mesh position={[-0.08, 1.08, 0.18]}>
-        <boxGeometry args={[0.06, 0.03, 0.02]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.8} />
-      </mesh>
-      {/* Headband tails */}
-      <mesh position={[0.3, 1.05, -0.1]} rotation={[0, 0, 0.3]}>
-        <boxGeometry args={[0.2, 0.04, 0.02]} />
-        <meshStandardMaterial color="#1a1a1a" />
-      </mesh>
-      <mesh position={[0.35, 1.0, -0.15]} rotation={[0, 0, 0.5]}>
-        <boxGeometry args={[0.15, 0.04, 0.02]} />
-        <meshStandardMaterial color="#1a1a1a" />
-      </mesh>
-    </>
-  );
-}
-
-function AvatarMesh({ 
-  color, 
-  shape,
-  hat,
-  accessory,
-  particle 
-}: { 
-  color: string; 
-  shape: string;
-  hat?: string;
-  accessory?: string;
-  particle?: string;
-}) {
-  const renderShape = () => {
-    switch (shape) {
-      case "cube":
-        return <CubeShape color={color} />;
-      case "sphere":
-        return <SphereShape color={color} />;
-      case "robot":
-        return <RobotShape color={color} />;
-      case "ninja":
-        return <NinjaShape color={color} />;
-      case "capsule":
-      default:
-        return <CapsuleShape color={color} />;
-    }
-  };
-
-  return (
-    <>
-      {renderShape()}
-      {hat && hat !== "none" && <AvatarHat hat={hat} color={color} />}
-      {accessory && accessory !== "none" && <AvatarAccessory accessory={accessory} color={color} />}
-      {particle && particle !== "none" && <AvatarParticle particle={particle} color={color} />}
-    </>
-  );
-}
+ function AvatarMesh({ 
+   color, 
+   shape,
+   hat,
+   accessory,
+   particle 
+ }: { 
+   color: string; 
+   shape: string;
+   hat?: string;
+   accessory?: string;
+   particle?: string;
+ }) {
+   const outfit = useMemo(() => getOutfitFromShape(shape), [shape]);
+ 
+   return (
+     <>
+       <HumanAvatar color={color} outfit={outfit} />
+       {hat && hat !== "none" && <AvatarHat hat={hat} color={color} />}
+       {accessory && accessory !== "none" && <AvatarAccessory accessory={accessory} color={color} />}
+       {particle && particle !== "none" && <AvatarParticle particle={particle} color={color} />}
+     </>
+   );
+ }
 
 export function PlayerCharacter({
   player,
