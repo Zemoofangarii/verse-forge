@@ -81,7 +81,7 @@ export function useMarketplace(profileId: string | null) {
     setCoins(data?.coins || 0);
   }, [profileId]);
 
-  // Buy a property
+  // Buy a property (server-validated atomic transaction)
   const buyProperty = useCallback(async (property: Property) => {
     if (!profileId) {
       toast.error("You must be logged in to buy properties");
@@ -94,37 +94,19 @@ export function useMarketplace(profileId: string | null) {
     }
 
     try {
-      // Update property ownership
-      const { error: propertyError } = await supabase
-        .from("properties")
-        .update({
-          owner_id: profileId,
-          is_for_sale: false,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", property.id);
+      const { data, error } = await supabase.rpc('purchase_property', {
+        p_property_id: property.id,
+        p_buyer_profile_id: profileId,
+        p_expected_price: property.price,
+      });
 
-      if (propertyError) throw propertyError;
+      if (error) throw error;
 
-      // Deduct coins from buyer
-      const { error: coinsError } = await supabase
-        .from("profiles")
-        .update({ coins: coins - property.price })
-        .eq("id", profileId);
-
-      if (coinsError) throw coinsError;
-
-      // Record transaction
-      const { error: transactionError } = await supabase
-        .from("transactions")
-        .insert({
-          property_id: property.id,
-          buyer_id: profileId,
-          amount: property.price,
-          transaction_type: "purchase",
-        });
-
-      if (transactionError) throw transactionError;
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        toast.error(result.error || "Purchase failed");
+        return false;
+      }
 
       // Refresh data
       await Promise.all([fetchProperties(), fetchMyProperties(), fetchCoins()]);
@@ -138,7 +120,7 @@ export function useMarketplace(profileId: string | null) {
     }
   }, [profileId, coins, fetchProperties, fetchMyProperties, fetchCoins]);
 
-  // Sell a property back to the marketplace
+  // Sell a property back to the marketplace (server-validated atomic transaction)
   const sellProperty = useCallback(async (property: Property, askingPrice: number) => {
     if (!profileId) {
       toast.error("You must be logged in to sell properties");
@@ -146,53 +128,31 @@ export function useMarketplace(profileId: string | null) {
     }
 
     try {
-      // Get 80% of the asking price as immediate sale value
-      const saleValue = Math.floor(askingPrice * 0.8);
+      const { data, error } = await supabase.rpc('sell_property', {
+        p_property_id: property.id,
+        p_seller_profile_id: profileId,
+        p_asking_price: askingPrice,
+      });
 
-      // Update property to be for sale and remove ownership
-      const { error: propertyError } = await supabase
-        .from("properties")
-        .update({
-          owner_id: null,
-          is_for_sale: true,
-          price: askingPrice,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", property.id);
+      if (error) throw error;
 
-      if (propertyError) throw propertyError;
-
-      // Add coins to seller
-      const { error: coinsError } = await supabase
-        .from("profiles")
-        .update({ coins: coins + saleValue })
-        .eq("id", profileId);
-
-      if (coinsError) throw coinsError;
-
-      // Record transaction
-      const { error: transactionError } = await supabase
-        .from("transactions")
-        .insert({
-          property_id: property.id,
-          seller_id: profileId,
-          amount: saleValue,
-          transaction_type: "sale",
-        });
-
-      if (transactionError) throw transactionError;
+      const result = data as { success: boolean; error?: string; amount?: number };
+      if (!result.success) {
+        toast.error(result.error || "Sale failed");
+        return false;
+      }
 
       // Refresh data
       await Promise.all([fetchProperties(), fetchMyProperties(), fetchCoins()]);
 
-      toast.success(`Sold ${property.name} for ${saleValue} coins!`);
+      toast.success(`Sold ${property.name} for ${result.amount} coins!`);
       return true;
     } catch (error) {
       console.error("Error selling property:", error);
       toast.error("Failed to sell property");
       return false;
     }
-  }, [profileId, coins, fetchProperties, fetchMyProperties, fetchCoins]);
+  }, [profileId, fetchProperties, fetchMyProperties, fetchCoins]);
 
   // Initial fetch
   useEffect(() => {

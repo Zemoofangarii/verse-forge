@@ -369,9 +369,12 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
     });
   }, []);
 
-  // Process dead enemies and give rewards
+  // Process dead enemies and give rewards (server-validated)
   const processDeadEnemies = useCallback(async () => {
     if (!profileId) return;
+    
+    let totalXp = 0;
+    let totalCoins = 0;
     
     setCombatState(prev => {
       const deadEnemies = prev.enemies.filter(e => e.state === 'dead');
@@ -379,8 +382,6 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
       
       if (deadEnemies.length === 0) return prev;
       
-      let totalXp = 0;
-      let totalCoins = 0;
       const lootMessages: string[] = [];
       
       deadEnemies.forEach(enemy => {
@@ -407,51 +408,49 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
         }, 3000);
       }
       
-      // Calculate new level
-      let newXp = prev.xp + totalXp;
-      let newLevel = prev.level;
-      let xpNeeded = prev.xpToNextLevel;
-      
-      while (newXp >= xpNeeded) {
-        newXp -= xpNeeded;
-        newLevel++;
-        xpNeeded = calculateXpForLevel(newLevel);
-        setNotifications(n => [...n, `Level Up! Now level ${newLevel}`]);
+      // Award rewards via server-validated RPC
+      if (totalXp > 0 || totalCoins > 0) {
+        supabase.rpc('award_combat_rewards', {
+          p_profile_id: profileId,
+          p_xp_gained: totalXp,
+          p_coins_gained: totalCoins,
+        }).then(({ data, error }) => {
+          if (error) {
+            console.error('Error awarding combat rewards:', error);
+            return;
+          }
+          const result = data as { success: boolean; new_level: number; new_xp: number; leveled_up: boolean } | null;
+          if (result?.leveled_up) {
+            setNotifications(n => [...n, `Level Up! Now level ${result.new_level}`]);
+            setCombatState(cs => ({
+              ...cs,
+              level: result.new_level,
+              xp: result.new_xp,
+              maxHealth: calculateMaxHealth(result.new_level),
+              xpToNextLevel: calculateXpForLevel(result.new_level),
+            }));
+          } else if (result) {
+            setCombatState(cs => ({
+              ...cs,
+              xp: result.new_xp,
+              level: result.new_level,
+              xpToNextLevel: calculateXpForLevel(result.new_level),
+            }));
+          }
+        });
       }
       
-      // Update database
-      supabase
-        .from('profiles')
-        .update({
-          xp: newXp,
-          level: newLevel,
-          coins: prev.level, // This will be updated with actual coins
-        })
-        .eq('id', profileId)
-        .then(() => {
-          // Also add coins
-          supabase
-            .from('profiles')
-            .select('coins')
-            .eq('id', profileId)
-            .single()
-            .then(({ data }) => {
-              if (data) {
-                supabase
-                  .from('profiles')
-                  .update({ coins: data.coins + totalCoins })
-                  .eq('id', profileId);
-              }
-            });
-        });
+      // Optimistically update local state (remove dead enemies, add XP)
+      const newXp = prev.xp + totalXp;
+      const xpNeeded = prev.xpToNextLevel;
       
       return {
         ...prev,
         enemies: aliveEnemies,
-        xp: newXp,
-        level: newLevel,
-        maxHealth: calculateMaxHealth(newLevel),
-        xpToNextLevel: xpNeeded,
+        xp: newXp >= xpNeeded ? newXp - xpNeeded : newXp,
+        level: newXp >= xpNeeded ? prev.level + 1 : prev.level,
+        maxHealth: newXp >= xpNeeded ? calculateMaxHealth(prev.level + 1) : prev.maxHealth,
+        xpToNextLevel: newXp >= xpNeeded ? calculateXpForLevel(prev.level + 1) : xpNeeded,
       };
     });
   }, [profileId]);
