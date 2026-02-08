@@ -1,4 +1,4 @@
-import { useRef, Suspense, useEffect, useCallback } from "react";
+import { useRef, Suspense, useEffect, useCallback, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { Stars, Preload } from "@react-three/drei";
@@ -94,6 +94,15 @@ export function GameScene() {
     }
   }, [attackInputs, combat.punch, combat.kick, combat.attack, setAttackInputs]);
   
+  // Compute combat animation state for the avatar
+  const isMoving = !!(movement?.forward || movement?.backward || movement?.left || movement?.right);
+  const combatAnimState = useMemo(() => ({
+    isAttacking: combat.combatState.isAttacking,
+    attackType: combat.currentAttackType,
+    isMoving,
+    isDead: combat.combatState.health <= 0,
+  }), [combat.combatState.isAttacking, combat.currentAttackType, isMoving, combat.combatState.health]);
+  
   // Handle mouse click for attack
   const handleCanvasClick = useCallback(() => {
     combat.attack();
@@ -156,6 +165,7 @@ export function GameScene() {
               movement={movement}
               onPositionUpdate={updatePosition}
               cameraRef={cameraRef}
+              combatAnim={combatAnimState}
             />
 
             {/* Other players */}

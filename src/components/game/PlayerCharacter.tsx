@@ -1,4 +1,4 @@
- import { useRef, useMemo } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
 import * as THREE from "three";
@@ -6,8 +6,8 @@ import { Player, MovementInput, PlayerPosition } from "@/types/game";
 import { Text } from "@react-three/drei";
 import { AvatarHat } from "./avatar/AvatarHats";
 import { AvatarAccessory } from "./avatar/AvatarAccessories";
- import { AvatarParticle } from "./avatar/AvatarParticles";
- import { HumanAvatar } from "./avatar/HumanAvatar";
+import { AvatarParticle } from "./avatar/AvatarParticles";
+import { HumanAvatar, CombatAnimState } from "./avatar/HumanAvatar";
 
  const MOVE_SPEED = 5;
  
@@ -23,6 +23,7 @@ interface PlayerCharacterProps {
   movement?: MovementInput;
   onPositionUpdate?: (position: PlayerPosition, rotationY: number) => void;
   cameraRef?: React.RefObject<THREE.Object3D>;
+  combatAnim?: CombatAnimState;
 }
 
  // Map old shape names to outfit types for backwards compatibility
@@ -37,30 +38,32 @@ interface PlayerCharacterProps {
    }
  }
 
- function AvatarMesh({ 
-   color, 
-   shape,
-   hat,
-   accessory,
-   particle 
- }: { 
-   color: string; 
-   shape: string;
-   hat?: string;
-   accessory?: string;
-   particle?: string;
- }) {
-   const outfit = useMemo(() => getOutfitFromShape(shape), [shape]);
- 
-   return (
-     <>
-       <HumanAvatar color={color} outfit={outfit} />
-       {hat && hat !== "none" && <AvatarHat hat={hat} color={color} />}
-       {accessory && accessory !== "none" && <AvatarAccessory accessory={accessory} color={color} />}
-       {particle && particle !== "none" && <AvatarParticle particle={particle} color={color} />}
-     </>
-   );
- }
+function AvatarMesh({ 
+  color, 
+  shape,
+  hat,
+  accessory,
+  particle,
+  combatAnim,
+}: { 
+  color: string; 
+  shape: string;
+  hat?: string;
+  accessory?: string;
+  particle?: string;
+  combatAnim?: CombatAnimState;
+}) {
+  const outfit = useMemo(() => getOutfitFromShape(shape), [shape]);
+
+  return (
+    <>
+      <HumanAvatar color={color} outfit={outfit} combatAnim={combatAnim} />
+      {hat && hat !== "none" && <AvatarHat hat={hat} color={color} />}
+      {accessory && accessory !== "none" && <AvatarAccessory accessory={accessory} color={color} />}
+      {particle && particle !== "none" && <AvatarParticle particle={particle} color={color} />}
+    </>
+  );
+}
 
 export function PlayerCharacter({
   player,
@@ -68,6 +71,7 @@ export function PlayerCharacter({
   movement,
   onPositionUpdate,
   cameraRef,
+  combatAnim,
 }: PlayerCharacterProps) {
   const rigidBodyRef = useRef<any>(null);
   const meshRef = useRef<THREE.Group>(null);
@@ -194,6 +198,7 @@ export function PlayerCharacter({
             hat={characterHat}
             accessory={characterAccessory}
             particle={characterParticle}
+            combatAnim={combatAnim}
           />
         </group>
       </RigidBody>
