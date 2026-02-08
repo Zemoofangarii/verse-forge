@@ -328,7 +328,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      award_combat_rewards: {
+        Args: {
+          p_coins_gained: number
+          p_profile_id: string
+          p_xp_gained: number
+        }
+        Returns: Json
+      }
+      purchase_property: {
+        Args: {
+          p_buyer_profile_id: string
+          p_expected_price: number
+          p_property_id: string
+        }
+        Returns: Json
+      }
+      sell_property: {
+        Args: {
+          p_asking_price: number
+          p_property_id: string
+          p_seller_profile_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
