@@ -17,6 +17,7 @@ export function ThirdPersonCamera({ target, cameraRef }: ThirdPersonCameraProps)
   const rotationRef = useRef({ x: 0.3, y: 0 });
   const isPointerLockedRef = useRef(false);
   const targetPositionRef = useRef(new THREE.Vector3());
+  const cameraPositionRef = useRef(new THREE.Vector3());
 
   // Handle pointer lock
   useEffect(() => {
@@ -80,15 +81,13 @@ export function ThirdPersonCamera({ target, cameraRef }: ThirdPersonCameraProps)
       Math.cos(rotationRef.current.x) *
       CAMERA_DISTANCE;
 
-    // Smoothly interpolate camera position
-    camera.position.lerp(
-      new THREE.Vector3(
-        targetPositionRef.current.x + offsetX,
-        targetPositionRef.current.y + offsetY,
-        targetPositionRef.current.z + offsetZ
-      ),
-      5 * delta
+    // Smoothly interpolate camera position (reuse vector to avoid GC jitter)
+    cameraPositionRef.current.set(
+      targetPositionRef.current.x + offsetX,
+      targetPositionRef.current.y + offsetY,
+      targetPositionRef.current.z + offsetZ
     );
+    camera.position.lerp(cameraPositionRef.current, 5 * delta);
 
     // Look at target
     camera.lookAt(targetPositionRef.current);
