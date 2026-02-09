@@ -77,6 +77,8 @@ export function PlayerCharacter({
   const meshRef = useRef<THREE.Group>(null);
   const canJumpRef = useRef(true);
   const velocityRef = useRef(new THREE.Vector3());
+  const lastPositionUpdateRef = useRef(0);
+  const interpTargetRef = useRef(new THREE.Vector3());
 
   useFrame((state, delta) => {
     if (!isCurrentPlayer || !rigidBodyRef.current || !movement) return;
@@ -145,8 +147,10 @@ export function PlayerCharacter({
       }
     }
 
-    // Update position in database
-    if (onPositionUpdate) {
+    // Throttle position updates to reduce re-renders
+    const now = performance.now();
+    if (onPositionUpdate && now - lastPositionUpdateRef.current > 50) {
+      lastPositionUpdateRef.current = now;
       onPositionUpdate(
         { x: position.x, y: position.y, z: position.z },
         meshRef.current?.rotation.y ?? 0
@@ -158,14 +162,12 @@ export function PlayerCharacter({
   useFrame((_, delta) => {
     if (isCurrentPlayer || !meshRef.current) return;
 
-    meshRef.current.position.lerp(
-      new THREE.Vector3(
-        player.position.x,
-        player.position.y - 0.5,
-        player.position.z
-      ),
-      5 * delta
+    interpTargetRef.current.set(
+      player.position.x,
+      player.position.y - 0.5,
+      player.position.z
     );
+    meshRef.current.position.lerp(interpTargetRef.current, 5 * delta);
 
     meshRef.current.rotation.y = THREE.MathUtils.lerp(
       meshRef.current.rotation.y,
