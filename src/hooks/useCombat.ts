@@ -25,9 +25,10 @@ const ATTACK_RADIUS = 2;
 interface UseCombatProps {
   currentPlayer: Player | null;
   profileId: string | null;
+  onLootDrop?: (itemType: string, itemName: string) => void;
 }
 
-export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
+export function useCombat({ currentPlayer, profileId, onLootDrop }: UseCombatProps) {
   const [combatState, setCombatState] = useState<CombatState>({
     health: 100,
     maxHealth: 100,
@@ -395,6 +396,8 @@ export function useCombat({ currentPlayer, profileId }: UseCombatProps) {
               totalCoins += loot.amount || 0;
             } else if (loot.itemName) {
               lootMessages.push(`Got ${loot.itemName}!`);
+              // Add to inventory via callback
+              onLootDrop?.(loot.itemType, loot.itemName);
             }
           }
         });

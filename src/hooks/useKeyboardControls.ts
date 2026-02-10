@@ -46,6 +46,10 @@ export function useKeyboardControls() {
         case "Space":
           e.preventDefault();
           setMovement((prev) => ({ ...prev, jump: true }));
+          break;
+        case "ControlLeft":
+        case "ControlRight":
+          e.preventDefault();
           setAttackInputs((prev) => ({ ...prev, weaponAttack: true }));
           break;
         case "KeyQ":
@@ -81,6 +85,9 @@ export function useKeyboardControls() {
         break;
       case "Space":
         setMovement((prev) => ({ ...prev, jump: false }));
+        break;
+      case "ControlLeft":
+      case "ControlRight":
         setAttackInputs((prev) => ({ ...prev, weaponAttack: false }));
         break;
       case "KeyQ":

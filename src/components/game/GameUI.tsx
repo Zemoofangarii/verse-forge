@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Users, MessageCircle, Wifi, WifiOff, LogOut, Settings, Store, Coins } from "lucide-react";
+import { Send, Users, MessageCircle, Wifi, WifiOff, LogOut, Settings, Store, Coins, Package } from "lucide-react";
 import { Player } from "@/types/game";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AvatarCustomizer } from "./AvatarCustomizer";
 import { MarketplacePanel } from "./marketplace";
+import { InventoryPanel, InventoryItem } from "./inventory/InventoryPanel";
 
 interface GameUIProps {
   currentPlayer: Player;
@@ -22,6 +23,9 @@ interface GameUIProps {
     accessory?: string;
     particle?: string;
   }) => void;
+  inventoryItems: InventoryItem[];
+  onUseItem: (itemId: string) => void;
+  onEquipItem: (itemId: string) => void;
 }
 
 export function GameUI({
@@ -30,10 +34,14 @@ export function GameUI({
   isConnected,
   onChatFocus,
   onAvatarUpdate,
+  inventoryItems,
+  onUseItem,
+  onEquipItem,
 }: GameUIProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPlayersOpen, setIsPlayersOpen] = useState(false);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [isInventoryOpen, setIsInventoryOpen] = useState(false);
   const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const { messages, sendMessage } = useChat();
@@ -120,6 +128,21 @@ export function GameUI({
 
           {/* Right side controls */}
           <div className="flex items-center gap-2">
+            {/* Inventory button */}
+            <Button
+              variant="glass"
+              size="icon"
+              onClick={() => setIsInventoryOpen(true)}
+              title="Inventory (I)"
+              className="relative"
+            >
+              <Package className="w-5 h-5" />
+              {inventoryItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+                  {inventoryItems.length}
+                </span>
+              )}
+            </Button>
             {/* Marketplace button */}
             <Button
               variant="glass"
@@ -318,6 +341,15 @@ export function GameUI({
         isLoading={isMarketplaceLoading}
         onBuyProperty={buyProperty}
         onSellProperty={sellProperty}
+      />
+
+      {/* Inventory Panel */}
+      <InventoryPanel
+        isOpen={isInventoryOpen}
+        onClose={() => setIsInventoryOpen(false)}
+        items={inventoryItems}
+        onUseItem={onUseItem}
+        onEquipItem={onEquipItem}
       />
     </>
   );

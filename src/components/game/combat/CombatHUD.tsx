@@ -155,7 +155,7 @@ export function CombatHUD({
             "w-14 h-14 rounded-xl transition-all",
             currentAttackType === 'weapon' && "ring-2 ring-primary scale-95"
           )}
-          title="Weapon Attack (Space/LMB)"
+          title="Weapon Attack (Ctrl/LMB)"
         >
           {combatState.equippedWeapon.type === 'ranged' ? (
             <Target className="w-6 h-6" />
@@ -202,7 +202,7 @@ export function CombatHUD({
         <p className="font-semibold text-foreground mb-1">Combat Controls:</p>
         <p><span className="text-orange-400 font-semibold">Q</span> Punch ({ATTACK_TYPES.punch.damage} DMG)</p>
         <p><span className="text-blue-400 font-semibold">E</span> Kick ({ATTACK_TYPES.kick.damage} DMG)</p>
-        <p><span className="text-primary font-semibold">Space / LMB</span> Weapon Attack</p>
+        <p><span className="text-primary font-semibold">Ctrl / LMB</span> Weapon Attack</p>
         <p><span className="text-yellow-400 font-semibold">1-6</span> Switch Weapon</p>
       </div>
     </>

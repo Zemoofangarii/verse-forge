@@ -93,7 +93,7 @@ export const ATTACK_TYPES: Record<AttackType, AttackInfo> = {
     damage: 0, // Uses weapon damage
     range: 0, // Uses weapon range
     cooldown: 0, // Uses weapon cooldown
-    key: 'LMB / Space',
+    key: 'LMB / Ctrl',
   },
 };
 

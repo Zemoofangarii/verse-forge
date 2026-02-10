@@ -11,6 +11,7 @@ import { EnemyCharacter, Projectile, CombatHUD } from "./combat";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useKeyboardControls } from "@/hooks/useKeyboardControls";
 import { useCombat } from "@/hooks/useCombat";
+import { useInventory } from "@/hooks/useInventory";
 import { GameUI } from "./GameUI";
 import { LoadingScreen } from "./LoadingScreen";
 
@@ -50,13 +51,24 @@ export function GameScene() {
   const { currentPlayer, otherPlayers, isConnected, updatePosition, updateAvatar } = useMultiplayer();
   const { movement, attackInputs, setIsChatFocused, setAttackInputs } = useKeyboardControls();
   const cameraRef = useRef<THREE.Object3D>(new THREE.Object3D());
+  const addItemRef = useRef<(itemType: string, itemName: string) => void>(() => {});
   
-  // Combat system
+  // Combat system — uses ref to avoid circular deps
   const combat = useCombat({
     currentPlayer,
     profileId: currentPlayer?.id || null,
+    onLootDrop: (itemType, itemName) => addItemRef.current(itemType, itemName),
   });
+
+  // Inventory system
+  const { items: inventoryItems, addItem, useItem, equipItem } = useInventory(
+    currentPlayer?.id || null,
+    combat.heal,
+    combat.equipWeapon,
+  );
   
+  // Keep ref up to date
+  addItemRef.current = addItem;
   // Handle keyboard weapon switching
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -212,6 +224,9 @@ export function GameScene() {
         isConnected={isConnected}
         onChatFocus={setIsChatFocused}
         onAvatarUpdate={updateAvatar}
+        inventoryItems={inventoryItems}
+        onUseItem={useItem}
+        onEquipItem={equipItem}
       />
     </div>
   );
